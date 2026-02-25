@@ -32,6 +32,7 @@
 | **Network** | Ethernet (wired, not WiFi) |
 | **Power** | 5V/4A USB-C supply |
 | **Cooling** | Passive heatsink or small fan recommended |
+| **OS** | Armbian Minimal/IOT (Debian Bookworm, Kernel 6.18+) |
 
 ---
 
@@ -48,11 +49,32 @@
 
 You'll boot from SD first to set up the NVMe, then move everything to NVMe.
 
-1. Download the **Orange Pi 3B Ubuntu 22.04 Server** image from [orangepi.org](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-Pi-3B.html)
-2. Flash it to a microSD card using [Balena Etcher](https://etcher.balena.io/)
-3. Insert the SD card, connect Ethernet, attach a monitor or use serial console
-4. Power on and wait for boot (first boot takes ~2 minutes)
-5. Default credentials: `orangepi` / `orangepi`
+> [!WARNING]
+> **Do NOT use the official Orange Pi images.** They are distributed via Google Drive with no proper verification mirror, ship outdated kernels with unaudited vendor patches, and route all package updates through Chinese CDNs (Huawei mirrors) that are baked into the OS. There are no independent security audits of these images. For a server you're exposing to the internet, this is an unacceptable risk.
+
+**Use Armbian Minimal/IOT instead:**
+
+1. Go to **[armbian.com/orange-pi-3b](https://www.armbian.com/orange-pi-3b/)** and download the **Minimal / IOT** image
+   - `~322MB`, much leaner than a desktop image
+   - Ships with a recent mainline kernel (6.18+)
+   - Distributed via Armbian's own verified mirrors — no Google Drive
+2. **Verify the download before flashing** — click the SHA hash and PGP signature links on the download page:
+   ```bash
+   # On your Mac:
+   shasum -a 256 Armbian_*.img.xz
+   # Compare to the SHA value on the Armbian download page — must match exactly
+   ```
+3. Flash to a microSD card using [Balena Etcher](https://etcher.balena.io/)
+4. Insert the SD card, connect Ethernet, and power on
+5. First boot takes ~2 minutes. Default credentials: `root` / `1234` (you'll be forced to change this on first login)
+
+**Why Armbian?**
+- ✅ Open source build system — every image is built reproducibly in public CI
+- ✅ Standard Debian/Ubuntu package repos — no vendor CDN baked in
+- ✅ GPG-signed images you can verify before flashing
+- ✅ Mainline kernel with proper upstream security patches
+- ✅ Active security team with rapid CVE response
+- ✅ No pre-installed vendor bloat or mystery services
 
 ### 1.3 — Initial System Hardening
 
