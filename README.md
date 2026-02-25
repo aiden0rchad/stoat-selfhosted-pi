@@ -59,11 +59,18 @@ You'll boot from SD first to set up the NVMe, then move everything to NVMe.
    - Ships with a recent mainline kernel (6.18+)
    - Distributed via Armbian's own verified mirrors — no Google Drive
 2. **Verify the download before flashing** — click the SHA hash and PGP signature links on the download page:
+
+   **Linux / macOS:**
    ```bash
-   # On your Mac:
+   sha256sum Armbian_*.img.xz
+   # or on macOS:
    shasum -a 256 Armbian_*.img.xz
-   # Compare to the SHA value on the Armbian download page — must match exactly
    ```
+   **Windows (PowerShell):**
+   ```powershell
+   Get-FileHash Armbian_*.img.xz -Algorithm SHA256
+   ```
+   Compare the output to the SHA value on the Armbian download page — must match exactly.
 3. Flash to a microSD card using [Balena Etcher](https://etcher.balena.io/)
 4. Insert the SD card, connect Ethernet, and power on
 5. First boot takes ~2 minutes. Default credentials: `root` / `1234` (you'll be forced to change this on first login)
@@ -97,13 +104,22 @@ sudo nano /etc/ssh/sshd_config
 sudo systemctl restart sshd
 ```
 
-**Set up SSH key authentication (from your main computer):**
+**Set up SSH key authentication (from your workstation):**
+
+**Linux / macOS:**
 ```bash
-# On your main machine:
 ssh-keygen -t ed25519 -C "orangepi"
 ssh-copy-id yourusername@<orange-pi-ip>
+```
 
-# Then on the Pi, disable password auth:
+**Windows (PowerShell / Windows Terminal):**
+```powershell
+ssh-keygen -t ed25519 -C "orangepi"
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh yourusername@<orange-pi-ip> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+
+Then on the Pi, disable password auth:
+```bash
 sudo nano /etc/ssh/sshd_config
 # Set: PasswordAuthentication no
 sudo systemctl restart sshd
@@ -437,7 +453,7 @@ docker compose logs database     # MongoDB logs
 | **RAM** | 8GB LPDDR4 |
 | **Storage** | M.2 NVMe SSD |
 | **Network** | Gigabit Ethernet |
-| **OS** | Ubuntu 22.04 Server LTS (headless) |
+| **OS** | Armbian Minimal/IOT (Debian Bookworm, Kernel 6.18+) |
 | **Idle Power** | ~3–5W |
 
 ---
