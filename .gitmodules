@@ -1,0 +1,6 @@
+[submodule ".for-web"]
+	path = .for-web
+	url = https://github.com/aiden0rchad/stoat-for-web-pi.git
+[submodule ".admin-panel"]
+	path = .admin-panel
+	url = https://github.com/aiden0rchad/stoat-admin-panel-pi.git
