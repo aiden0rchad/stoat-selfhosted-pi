@@ -1,35 +1,45 @@
-# Stoat Chat — Raspberry Pi 4 Edition 🍓
+# Stoat Chat — Orange Pi 3B Edition �
 
-A memory-optimized self-hosted deployment of [Stoat Chat](https://github.com/stoatchat/self-hosted), tuned for Raspberry Pi 4 (4GB RAM).
+A speed-optimized self-hosted deployment of [Stoat Chat](https://github.com/stoatchat/self-hosted), tuned for the Orange Pi 3B 8GB running headless on NVMe.
 
-## What's Different from the Standard Version?
+## Hardware Profile
+
+| Spec | Detail |
+|---|---|
+| **Board** | Orange Pi 3B |
+| **CPU** | RK3566 Quad-Core ARM64 |
+| **RAM** | 8GB LPDDR4 |
+| **Storage** | M.2 NVMe SSD (OS + Docker) |
+| **Network** | DMZ segment, Cloudflare Tunnel |
+| **OS** | Headless Debian/Ubuntu (no GUI) |
+
+## What's Optimized?
 
 | Optimization | Detail |
 |---|---|
-| **Memory Limits** | Every Docker service has a `mem_limit` cap (~2.5GB total budget) |
-| **CPU Pinning** | `cpus` constraints prevent any single service from starving others |
-| **ARM64 Targeting** | `platform: linux/arm64` on all services for clean native pulls |
-| **Reduced UDP Ports** | LiveKit uses `50000-50020` instead of `50000-50100` |
-| **MongoDB Tuning** | `MALLOC_ARENA_MAX=2` reduces glibc memory overhead |
-| **KeyDB Tuning** | `--maxmemory 48mb --maxmemory-policy allkeys-lru` |
-| **Custom Web Image** | Nginx Alpine serving static frontend (~20MB vs upstream) |
-| **Admin Panel Tuning** | `NODE_OPTIONS=--max-old-space-size=128` + cache cleanup |
+| **No memory caps** | All 8GB available — services use what they need |
+| **No CPU limits** | Full quad-core for all containers |
+| **ARM64 targeting** | `platform: linux/arm64` on every service |
+| **KeyDB tuned** | 256MB cache + 2 server threads for fast lookups |
+| **Admin panel** | 512MB Node.js heap for snappy dashboard |
+| **Full LiveKit range** | UDP 50000–50100 for best voice/video quality |
+| **NVMe storage** | All data volumes write directly to NVMe |
+| **Custom web image** | Nginx Alpine serving your modified frontend |
 
 ## Prerequisites
 
-- **Raspberry Pi 4** with **4GB RAM** (8GB strongly recommended if budget allows)
-- **Raspberry Pi OS 64-bit** (Bookworm or later)
-- **USB 3.0 SSD** — do NOT use a microSD card for the database (MongoDB writes will kill it)
+- **Orange Pi 3B** with 8GB RAM
+- **Debian or Ubuntu** headless (no desktop environment)
+- **M.2 NVMe SSD** installed and formatted (OS + Docker running from it)
 - **Docker + Docker Compose** installed
 
 ## Quick Setup
 
-### 1. Enable Swap (Critical for 4GB Pi)
+### 1. Install Docker
 ```bash
-sudo dphys-swapfile swapoff
-sudo sed -i 's/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile
-sudo dphys-swapfile setup
-sudo dphys-swapfile swapon
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# Log out and back in
 ```
 
 ### 2. Clone This Repo
@@ -41,36 +51,39 @@ cd stoat
 ### 3. Configure Environment
 ```bash
 cp .env.web.example .env.web
+# Edit .env.web if you have a custom domain
 ```
 
 ### 4. Build & Start
 ```bash
-docker compose build   # This will take ~15-30 min on Pi 4
+docker compose build   # ~15-20 min first time on ARM
 docker compose up -d
 ```
 
 ### 5. Access
-- **Stoat Chat**: `http://<pi-ip>:13080`
-- **Admin Panel**: `http://<pi-ip>:13000`
+- **Stoat Chat**: `http://<orange-pi-ip>:13080`
+- **Admin Panel**: `http://<orange-pi-ip>:13000`
 
-## Memory Budget Breakdown
+## DMZ & Cloudflare Tunnel Notes
 
-| Service | Limit | Notes |
-|---|---|---|
-| MongoDB | 512MB | Main database |
-| MinIO | 256MB | File storage |
-| API | 256MB | Backend API |
-| LiveKit | 256MB | Voice/video relay |
-| RabbitMQ | 192MB | Message broker |
-| Admin Panel | 192MB | Dashboard |
-| Events + Autumn + Voice Ingress | 128MB each | WebSocket, files, voice |
-| January | 96MB | Link proxy |
-| Redis + Caddy + GifBox + Crond + PushD + Web | 64MB each | Light services |
-| **Total** | **~2.5GB** | Leaves ~1.5GB for OS + swap |
+Since this box lives in a DMZ:
+- **No ports need to be forwarded on your main router** if you use Cloudflare Tunnel
+- Add the Cloudflare Tunnel container later pointing to `caddy:80` (the internal Caddy port)
+- LiveKit WebRTC **requires UDP ports 50000–50100** — Cloudflare Tunnel does NOT support UDP, so for voice/video you'll still need those ports open from the DMZ to the internet
+- Consider running the Cloudflare Tunnel as an additional service in this compose stack when ready
 
-## Tips
+## Performance Tips
 
-- **First boot is slow** — MongoDB needs to initialize, and images need to be pulled (~3-5GB total)
-- **Monitor memory** with `docker stats` to see real-time container usage
-- **If OOM occurs**, consider disabling `gifbox` and `pushd` (optional services)
-- **Port forwarding**: Open UDP `50000-50020` on your router for voice/video calls
+- **NVMe = no bottleneck** — MongoDB, MinIO, and all data volumes will be fast
+- **Monitor** with `docker stats` to see real-time container resource usage
+- **First boot is slow** — images must be pulled (~3-5GB), subsequent starts are instant
+- **Keep Docker logging in check**: add the following to `/etc/docker/daemon.json` to prevent logs from filling your SSD:
+  ```json
+  {
+    "log-driver": "json-file",
+    "log-opts": {
+      "max-size": "10m",
+      "max-file": "3"
+    }
+  }
+  ```

@@ -6,12 +6,8 @@ services:
     image: docker.io/mongo
     platform: linux/arm64
     restart: always
-    mem_limit: 512m
-    cpus: 1.0
     volumes:
       - ./data/db:/data/db
-    environment:
-      - MALLOC_ARENA_MAX=2
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 15s
@@ -24,17 +20,13 @@ services:
     image: docker.io/eqalpha/keydb
     platform: linux/arm64
     restart: always
-    mem_limit: 64m
-    cpus: 0.25
-    command: keydb-server --maxmemory 48mb --maxmemory-policy allkeys-lru
+    command: keydb-server --maxmemory 256mb --maxmemory-policy allkeys-lru --server-threads 2
 
   # RabbitMQ: Internal message broker
   rabbit:
     image: docker.io/rabbitmq:4
     platform: linux/arm64
     restart: always
-    mem_limit: 192m
-    cpus: 0.5
     environment:
       RABBITMQ_DEFAULT_USER: rabbituser
       RABBITMQ_DEFAULT_PASS: rabbitpass
@@ -52,8 +44,6 @@ services:
     image: docker.io/minio/minio
     platform: linux/arm64
     command: server /data
-    mem_limit: 256m
-    cpus: 0.5
     volumes:
       - ./data/minio:/data
     environment:
@@ -78,8 +68,6 @@ services:
     image: docker.io/caddy
     platform: linux/arm64
     restart: always
-    mem_limit: 64m
-    cpus: 0.25
     env_file: .env.web
     ports:
       - "13080:80"
@@ -93,8 +81,6 @@ services:
   api:
     image: ghcr.io/stoatchat/api:v0.11.1
     platform: linux/arm64
-    mem_limit: 256m
-    cpus: 1.0
     depends_on:
       database:
         condition: service_healthy
@@ -112,8 +98,6 @@ services:
   events:
     image: ghcr.io/stoatchat/events:v0.11.1
     platform: linux/arm64
-    mem_limit: 128m
-    cpus: 0.5
     depends_on:
       database:
         condition: service_healthy
@@ -129,8 +113,6 @@ services:
   autumn:
     image: ghcr.io/stoatchat/file-server:v0.11.1
     platform: linux/arm64
-    mem_limit: 128m
-    cpus: 0.5
     depends_on:
       database:
         condition: service_healthy
@@ -146,8 +128,6 @@ services:
   january:
     image: ghcr.io/stoatchat/proxy:v0.11.1
     platform: linux/arm64
-    mem_limit: 96m
-    cpus: 0.25
     volumes:
       - type: bind
         source: ./Revolt.toml
@@ -158,8 +138,6 @@ services:
   gifbox:
     image: ghcr.io/stoatchat/gifbox:v0.11.1
     platform: linux/arm64
-    mem_limit: 64m
-    cpus: 0.25
     volumes:
       - type: bind
         source: ./Revolt.toml
@@ -170,8 +148,6 @@ services:
   crond:
     image: ghcr.io/stoatchat/crond:v0.11.1
     platform: linux/arm64
-    mem_limit: 64m
-    cpus: 0.25
     depends_on:
       database:
         condition: service_healthy
@@ -187,8 +163,6 @@ services:
   pushd:
     image: ghcr.io/stoatchat/pushd:v0.11.1
     platform: linux/arm64
-    mem_limit: 64m
-    cpus: 0.25
     depends_on:
       database:
         condition: service_healthy
@@ -206,8 +180,6 @@ services:
   voice-ingress:
     image: ghcr.io/stoatchat/voice-ingress:v0.11.1
     platform: linux/arm64
-    mem_limit: 128m
-    cpus: 0.5
     restart: always
     depends_on:
       database:
@@ -222,14 +194,12 @@ services:
   livekit:
     image: ghcr.io/stoatchat/livekit-server:v1.9.6
     platform: linux/arm64
-    mem_limit: 256m
-    cpus: 1.0
     command: --config /etc/livekit.yml
     volumes:
       - ./livekit.yml:/etc/livekit.yml
     ports:
       - "7881:7881"
-      - "50000-50020:50000-50020/udp"
+      - "50000-50100:50000-50100/udp"
     restart: always
 
   # Create buckets for minio.
@@ -248,8 +218,6 @@ services:
   web:
     build: ./.for-web
     platform: linux/arm64
-    mem_limit: 64m
-    cpus: 0.25
     restart: always
     env_file: .env.web
 
@@ -257,8 +225,6 @@ services:
   admin-panel:
     build: ./.admin-panel
     platform: linux/arm64
-    mem_limit: 192m
-    cpus: 0.5
     restart: always
     ports:
       - "13000:3000"
@@ -267,7 +233,7 @@ services:
       - MONGODB=mongodb://database:27017
       - NEXT_PUBLIC_AUTH_TYPE=none
       - NEXTAUTH_URL=http://localhost:3000
-      - NODE_OPTIONS=--max-old-space-size=128
+      - NODE_OPTIONS=--max-old-space-size=512
     depends_on:
       redis:
         condition: service_started
