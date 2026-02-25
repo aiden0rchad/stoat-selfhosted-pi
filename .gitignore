@@ -8,3 +8,4 @@ Revolt.toml.old
 livekit.yml.old
 
 compose.override.yml
+livekit.yml

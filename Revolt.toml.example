@@ -1,0 +1,35 @@
+# Stoat Configuration
+
+[database]
+mongodb = "mongodb://database"
+redis = "redis://redis/"
+
+[hosts]
+app = "http://local.stoat.chat"
+api = "http://local.stoat.chat/api"
+events = "ws://local.stoat.chat/ws"
+autumn = "http://local.stoat.chat/autumn"
+january = "http://local.stoat.chat/january"
+
+[api]
+registration.invite_only = false
+
+[features]
+limits.message_length = 4000
+
+[files]
+# Higher quality images — generous limits for self-hosted on NVMe
+max_upload_size = 104857600  # 100 MB
+max_avatar_size = 10485760   # 10 MB
+max_banner_size = 20971520   # 20 MB
+max_emoji_size = 5242880     # 5 MB
+max_attachment_size = 104857600  # 100 MB
+
+[rabbit]
+amqp = "amqp://rabbituser:rabbitpass@rabbit/"
+
+[voice]
+api_key = "devkey"
+api_secret = "secret"
+livekit_url = "ws://livekit:7880"
+manage_url = "http://livekit:7880"
